@@ -7,11 +7,12 @@
 /*   By: apergens <apergens@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/30 10:55:44 by apergens          #+#    #+#             */
-/*   Updated: 2014/06/30 19:40:23 by apergens         ###   ########.fr       */
+/*   Updated: 2014/07/01 13:44:39 by apergens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 $msg_type = 1;
+echo "\e[?7787l";                                                               // Creation d'un terminal alternatif
 echo "\e[8;5;90;t";                                                             // Redimensionnement automatique
 
 if(($msg_key = ftok(__FILE__, 'G')) == -1)                                      // Création du tunnel de communication
@@ -80,10 +81,14 @@ do
   $cmd = read_cmd();                                                            // Récupère les dernières commandes
   exec_cmd($cmd);                                                               // Exécution de la commande reçu
 }
-while ($cmd != 'exit');                                                         // Boucle tant que l'utilisateur n'a pas demandé de quitter
+while ($cmd != 'exit' || !msg_queue_exists($msg_key));                          // Boucle tant que l'utilisateur n'a pas demandé de quitter
+
+if (msg_queue_exists($msg_key))
+  msg_remove_queue($msg_id);                                                    // Supprime la file complète
 
 termcur(false);                                                                 // Réinitialisation du curseur avant sortie du programme
 `stty echo`;                                                                    // Réactive le mode echo du terminal
+echo "\e[?7787h";                                                               // Sorti du terminal alternatif
 
 function exec_cmd($cmd)                                                         // Exécution d'une commande
 {

@@ -7,18 +7,21 @@
 /*   By: apergens <apergens@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/29 22:51:45 by apergens          #+#    #+#             */
-/*   Updated: 2014/06/30 19:32:12 by apergens         ###   ########.fr       */
+/*   Updated: 2014/07/01 13:39:21 by apergens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 $cmd = '';                                                                      // Mise à zéro de l'historique de commande
 $msg_type = 1;                                                                  // Type de message, identique à celui du serveur
 
+$connect = false;
 $server = __DIR__.'/secu.php';                                                  // Chemin vers le serveur avant de demander la connexion
 if (file_exists($server) && ($msg_key = ftok($server, 'G')) != -1)              // Demande si une connexion automatique est nécessaire
 {
   do
   {
+    if (!msg_queue_exists($msg_key))
+      break ;
     termpos(0, 0);                                                              // Remet la position du curseur à zero
     termerase(true, true);                                                      // Efface le contenu du terminal
     $connect = trim(readline('Connexion automatique au serveur '.$msg_key.' [Y/n]? '));
@@ -51,19 +54,18 @@ do
     msg_send($msg_id, $msg_type, $cmd, false, false, $msg_err);                 // Envoi la commande si tout est bon
 }
 while ($cmd != 'exit');                                                         // Boucle sur le prompt tant qu'il n'est pas demandé de quitter
-msg_remove_queue($msg_id);                                                      // Supprime la file complète
 
 function check_cmd($cmd)                                                        // Vérifie la cohérence d'une commande
 {
   $return = false;
   $cmd = explode(' ', $cmd);
-  $count = count($cmd);
+  $count = count($cmd) - 1;
 
   if ($cmd[0] == 'exit' && !$count)
     $return = true;
-  else if ($cmd[0] == 'say' && $count > 1)
+  else if ($cmd[0] == 'say' && $count >= 1)
     $return = true;
-  else if ($cmd[0] == 'beep' && ($count == 1 || ($count == 2 && is_numeric($cmd[1]))))
+  else if ($cmd[0] == 'beep' && (!$count || ($count == 1 && is_numeric($cmd[1]))))
     $return = true;
 
   return ($return);
