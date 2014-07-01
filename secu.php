@@ -7,7 +7,7 @@
 /*   By: apergens <apergens@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/30 10:55:44 by apergens          #+#    #+#             */
-/*   Updated: 2014/07/01 13:44:39 by apergens         ###   ########.fr       */
+/*   Updated: 2014/07/01 15:02:45 by apergens         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ termcur();                                                                      
 osasay('SecuPlus SSH started');                                                 // Annonce le lancement de SecuPlus SSH
 
 state(-1);                                                                      // Initialise le détecteur
+$date = '';                                                                     // Initialise de la date de dernière intrusion
 $count = 0;                                                                     // Initialise le compteur d'intrusion
 
 do
@@ -41,7 +42,7 @@ do
     dispsize($size);                                                            // On affiche le message pour demander le redimensionnement
   else if (count(($users = users())))                                           // Si une connexion est détectée ...
   {
-    if (!is_array(($memo = state(null))) || $memo['uid'] != $users[0]['uid'])   // Nouvelle détection
+    if (!is_array(($memo = state())) || $memo['uid'] != $users[0]['uid'])       // Nouvelle détection
     {
       $count++;
       $memo = state($users[0]);                                                 // Enregistre la connexion en cours
@@ -56,7 +57,7 @@ do
     echo termput('   '.str_repeat('/', 84)."   \n", 160, 0);
     echo termput(str_repeat(' ', 90), 160, 0);
   }
-  else if (state(null) !== false)
+  else if ($cmd || state() !== false)
   {
     state(false);                                                               // Supprime la connexion enregistrée
     $space = str_repeat(' ', 30);                                               // Les lignes suivantes affichent le message de base
@@ -66,16 +67,27 @@ do
     echo termput($space.'/_/|_|     /_/ |_|     /___/  '.$space."\n", 34, 0);
     echo termput(str_repeat(' ', 90), 34, 0);
 
-    if (!client_cmd())                                                          // Les lignes suivantes seront en surimpression
+    termpos(1, 2);                                                              // Les lignes suivantes seront en surimpression
+    $display = array($intra_active, $count_active, $date_active);
+    for ($i = 0, $max = count($display); $i < $max; $i++)
+      echo termput('• ', $display[$i] ? 15 : 240, 0);
+
+    if (!client_cmd())                                                          // Toujours en surimpression
     {
       termpos(1, 90 - strlen($server));
       echo termput($server, 240, 0);                                            // Affiche l'ID du serveur pour le client
     }
     termpos(5, 2);
-    if ($count_active && !$count)
-      echo termput('aucune intrusion', 240, 0);
-    else if ($count_active)
-      echo termput($count.' intrusion'.(($count > 1) ? 's' : ''), 240, 0);
+    if ($count && $count_active)
+      echo termput($count.' intrusion'.(($count > 1) ? 's' : ''), 240, 0);      // Affiche le nombre d'intrusions
+//    else if ($count_active)
+//      echo termput('aucune intrusion', 240, 0);
+
+    if ($date_active)                                                           // Toujours en surimpression
+    {
+      termpos(5, 90 - (strlen($date) - 2));                                     // - 2 : accent codé sur 2 caractères
+      echo termput($date, 240, 0);                                              // Affiche la date de la dernière intrusion
+    }
   }
   usleep(250000);                                                               // Courte attente pour ne pas surcharger le processeur
   $cmd = read_cmd();                                                            // Récupère les dernières commandes
@@ -90,9 +102,28 @@ termcur(false);                                                                 
 `stty echo`;                                                                    // Réactive le mode echo du terminal
 echo "\e[?7787h";                                                               // Sorti du terminal alternatif
 
+function state($state = null)                                                   // Garde l'etat de l'affichage (évite les scintillement)
+{
+  global $date;
+  static $memo;
+
+  if ($state !== null || $state == -1)
+  {
+    if ($state != -1)
+    {
+      $memo = $state;
+      $date = $state ? '+ dernière à '.date('H:i:s') : $date;
+    }
+    termpos(0, 0);                                                              // Remet la position du curseur à zero
+    termerase(false, true);                                                     // Efface le terminal
+  }
+  return ($memo);
+}
+
 function exec_cmd($cmd)                                                         // Exécution d'une commande
 {
-  state(-1);
+  global $intra_active, $count_active, $date_active;
+
   $cmd = explode(' ', $cmd);
   if ($cmd[0] == 'beep')
     echo "\007";
@@ -100,6 +131,18 @@ function exec_cmd($cmd)                                                         
   {
     unset($cmd[0]);
     osasay(implode(' ', $cmd));
+  }
+  else if ($cmd[0] == 'stats')
+    $blabla = true;
+  else if (($cmd[0] == 'enable' || $cmd[0] == 'disable'))
+  {
+    $enable = $cmd[0] == 'enable';
+    switch ($cmd[1])
+    {
+      case 'intra': $intra_active = $enable; break ;
+      case 'count': $count_active = $enable; break ;
+      case 'date': $date_active = $enable; break ;
+    }
   }
 }
 
@@ -131,20 +174,6 @@ function read_cmd()                                                             
   if ($msg_type_tmp == $msg_type)
     return ($cmd);
   return (false);
-}
-
-function state($state)                                                          // Garde l'etat de l'affichage (évite les scintillement)
-{
-  static $memo;
-
-  if ($state !== null || $state == -1)
-  {
-    if ($state != -1)
-      $memo = $state;
-    termpos(0, 0);                                                              // Remet la position du curseur à zero
-    termerase(false, true);                                                     // Efface le terminal
-  }
-  return ($memo);
 }
 
 function dispsize($size)                                                        // Demande un redimensionnement si la taille n'est pas bonne
