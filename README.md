@@ -29,9 +29,16 @@ Une fois la liaison éfectuée, vous pouvez lancer la commande désiré pour fai
 ## Notes
 
 Commandes en fonction à ce jour :
- - exit : quitte le serveur, ferme le tunnel et quitte aussi le client.
- - beep : lance le beep génant du système, tout simplement.
- - say  : fait parler OS X via la commande osascript de la machine.
+ - enable  : active l'option choisie (liste ci-dessous),
+ - disable : désactive l'option choisie (liste ci-dessous),
+ - say     : fait parler OS X via la commande osascript de la machine,
+ - beep    : lance le beep génant du système, tout simplement,
+ - exit    : quitte le serveur, ferme le tunnel et quitte aussi le client.
+
+Liste des options disponibles (activable/désactivable) :
+ - intra   : ouvre le navigateur automatiquement à l'interception d'un intrusion,
+ - count   : affiche le nombre d'intrusion total depuis le démarrage du serveur,
+ - date    : affiche la date de la dernière intrustion en heures, minutes, et secondes.
 
 /!\ La version (de démo) en cours ne présente aucune fonction intéressante.
 
